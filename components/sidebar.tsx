@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -10,15 +10,11 @@ import {
   FileText,
   Bell,
   Shield,
-  LogOut,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/vendors", label: "Vendors", icon: Building2 },
   { href: "/risk-heatmap", label: "Risk Heatmap", icon: Grid3X3 },
   { href: "/documents", label: "Documents", icon: FileText },
@@ -27,15 +23,6 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleLogout = async () => {
-    setIsLoading(true);
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/auth/login");
-  };
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-border bg-sidebar">
@@ -52,7 +39,7 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 space-y-1 px-3 py-4">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+          const isActive = pathname === item.href;
           return (
             <Link
               key={item.href}
@@ -72,7 +59,7 @@ export function Sidebar() {
       </nav>
 
       {/* User section */}
-      <div className="border-t border-sidebar-border p-4 space-y-3">
+      <div className="border-t border-sidebar-border p-4">
         <div className="flex items-center gap-3">
           <Avatar className="h-9 w-9">
             <AvatarImage src="/placeholder-user.jpg" alt="User" />
@@ -89,18 +76,6 @@ export function Sidebar() {
             </p>
           </div>
         </div>
-
-        {/* Logout Button */}
-        <Button
-          onClick={handleLogout}
-          disabled={isLoading}
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start text-muted-foreground hover:text-foreground"
-        >
-          <LogOut className="h-4 w-4 mr-2" />
-          {isLoading ? "Logging out..." : "Log out"}
-        </Button>
       </div>
     </aside>
   );
