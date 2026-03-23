@@ -6,9 +6,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { LogOut, TrendingUp, AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
+import { LogOut, TrendingUp, AlertTriangle, CheckCircle2, Clock, BarChart3, TrendingDown } from 'lucide-react'
 import { AppLayout } from '@/components/app-layout'
 import { getRiskLevel } from '@/lib/vendor-form-config'
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
 
 interface VendorSubmission {
   email: string
@@ -41,7 +56,7 @@ export default function DashboardPage() {
     Object.entries(allSubmissions).forEach(([email, submission]: [string, any]) => {
       submissions.push({
         email,
-        vendorName: email.split('@')[0],
+        vendorName: submission.vendorName || email.split('@')[0],
         riskScore: submission.riskScore,
         timestamp: submission.timestamp,
         responses: submission.responses,
@@ -57,12 +72,51 @@ export default function DashboardPage() {
     router.push('/auth/admin/login')
   }
 
+  // Analytics calculations
   const riskStats = {
     critical: vendorSubmissions.filter((v) => v.riskScore >= 75).length,
     high: vendorSubmissions.filter((v) => v.riskScore >= 50 && v.riskScore < 75).length,
     medium: vendorSubmissions.filter((v) => v.riskScore >= 25 && v.riskScore < 50).length,
     low: vendorSubmissions.filter((v) => v.riskScore < 25).length,
   }
+
+  const avgRiskScore = vendorSubmissions.length > 0
+    ? Math.round(vendorSubmissions.reduce((sum, v) => sum + v.riskScore, 0) / vendorSubmissions.length)
+    : 0
+
+  const riskTrend = vendorSubmissions.slice(-10).map((v) => ({
+    vendor: v.vendorName.substring(0, 8),
+    score: Math.round(v.riskScore),
+    date: new Date(v.timestamp).toLocaleDateString().substring(0, 5),
+  }))
+
+  const riskDistribution = [
+    { name: 'Critical', value: riskStats.critical, color: '#EF4444' },
+    { name: 'High', value: riskStats.high, color: '#F59E0B' },
+    { name: 'Medium', value: riskStats.medium, color: '#3B82F6' },
+    { name: 'Low', value: riskStats.low, color: '#10B981' },
+  ].filter((item) => item.value > 0)
+
+  const timelineData = vendorSubmissions.slice(-7).reverse().map((v) => ({
+    date: new Date(v.timestamp).toLocaleDateString(),
+    submissions: vendorSubmissions.filter((sub) => new Date(sub.timestamp).toLocaleDateString() === new Date(v.timestamp).toLocaleDateString()).length,
+  }))
+
+  const uniqueDates = new Set<string>()
+  const submissionTimeline = vendorSubmissions.slice(-7).reduce((acc, v) => {
+    const date = new Date(v.timestamp).toLocaleDateString()
+    uniqueDates.add(date)
+    return acc
+  }, [] as VendorSubmission[])
+
+  const timelineChartData = Array.from(uniqueDates).map((date) => ({
+    date,
+    submissions: vendorSubmissions.filter((v) => new Date(v.timestamp).toLocaleDateString() === date).length,
+  }))
+
+  // Alerts for high-risk vendors
+  const criticalVendors = vendorSubmissions.filter((v) => v.riskScore >= 75)
+  const highRiskVendors = vendorSubmissions.filter((v) => v.riskScore >= 50 && v.riskScore < 75)
 
   if (isLoading) {
     return (
@@ -78,9 +132,9 @@ export default function DashboardPage() {
         {/* Page Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Vendor Risk Dashboard</h1>
+            <h1 className="text-2xl font-semibold text-foreground">Vendor Risk Analytics Dashboard</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Monitor and track vendor risk submissions
+              Comprehensive vendor risk assessment and compliance monitoring
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
@@ -89,39 +143,208 @@ export default function DashboardPage() {
           </Button>
         </div>
 
-        {/* Risk Statistics */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <StatCard
+        {/* Key Metrics */}
+        <div className="grid gap-4 md:grid-cols-5">
+          <MetricCard
+            title="Total Vendors"
+            value={vendorSubmissions.length}
+            subtitle="Active assessments"
+            icon={CheckCircle2}
+            color="text-blue-400"
+            bgColor="bg-blue-900/20"
+          />
+          <MetricCard
+            title="Avg Risk Score"
+            value={avgRiskScore}
+            subtitle="Portfolio average"
+            icon={TrendingUp}
+            color={avgRiskScore > 60 ? 'text-red-400' : avgRiskScore > 40 ? 'text-amber-400' : 'text-green-400'}
+            bgColor={avgRiskScore > 60 ? 'bg-red-900/20' : avgRiskScore > 40 ? 'bg-amber-900/20' : 'bg-green-900/20'}
+          />
+          <MetricCard
             title="Critical Risk"
             value={riskStats.critical}
-            color="bg-red-900/20"
-            textColor="text-red-400"
-            borderColor="border-red-500/20"
+            subtitle="Require immediate action"
+            icon={AlertTriangle}
+            color="text-red-400"
+            bgColor="bg-red-900/20"
           />
-          <StatCard
+          <MetricCard
             title="High Risk"
             value={riskStats.high}
-            color="bg-amber-900/20"
-            textColor="text-amber-400"
-            borderColor="border-amber-500/20"
+            subtitle="Close monitoring needed"
+            icon={AlertTriangle}
+            color="text-amber-400"
+            bgColor="bg-amber-900/20"
           />
-          <StatCard
-            title="Medium Risk"
-            value={riskStats.medium}
-            color="bg-blue-900/20"
-            textColor="text-blue-400"
-            borderColor="border-blue-500/20"
-          />
-          <StatCard
+          <MetricCard
             title="Low Risk"
             value={riskStats.low}
-            color="bg-green-900/20"
-            textColor="text-green-400"
-            borderColor="border-green-500/20"
+            subtitle="Good compliance standing"
+            icon={CheckCircle2}
+            color="text-green-400"
+            bgColor="bg-green-900/20"
           />
         </div>
 
-        {/* Vendor Submissions */}
+        {/* Charts */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Risk Distribution */}
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <CardTitle className="text-foreground">Risk Distribution</CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Vendor breakdown by risk level
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {riskDistribution.length > 0 ? (
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={riskDistribution}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, value }) => `${name}: ${value}`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {riskDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-64 flex items-center justify-center text-muted-foreground">
+                  No vendor data available
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Risk Scores */}
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <CardTitle className="text-foreground">Recent Risk Scores</CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Last 10 vendor assessments
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {riskTrend.length > 0 ? (
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={riskTrend} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                    <XAxis dataKey="vendor" tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }} tickLine={false} />
+                    <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'var(--card)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '8px',
+                        color: 'var(--foreground)',
+                      }}
+                    />
+                    <Bar dataKey="score" fill="var(--risk-high)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-64 flex items-center justify-center text-muted-foreground">
+                  No data available
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Submission Timeline */}
+        {timelineChartData.length > 0 && (
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <CardTitle className="text-foreground">Submission Timeline</CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Number of vendor assessments over time
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={timelineChartData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                  <XAxis dataKey="date" tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }} tickLine={false} />
+                  <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'var(--card)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '8px',
+                      color: 'var(--foreground)',
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="submissions"
+                    stroke="var(--primary)"
+                    dot={{ fill: 'var(--primary)', r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Critical Alerts */}
+        {(criticalVendors.length > 0 || highRiskVendors.length > 0) && (
+          <Card className="border-red-500/50 bg-red-900/10">
+            <CardHeader>
+              <CardTitle className="text-red-400">Active Risk Alerts</CardTitle>
+              <CardDescription className="text-red-300/70">
+                Vendors requiring immediate attention
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {criticalVendors.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-red-400 mb-2">Critical Risk ({criticalVendors.length})</p>
+                  <div className="space-y-2">
+                    {criticalVendors.map((vendor) => (
+                      <div key={vendor.email} className="p-3 rounded-lg bg-red-900/20 border border-red-500/30 flex justify-between items-center">
+                        <div>
+                          <p className="text-sm text-red-300">{vendor.vendorName}</p>
+                          <p className="text-xs text-red-300/60">Risk Score: {Math.round(vendor.riskScore)}</p>
+                        </div>
+                        <Badge className="bg-red-600 text-white">CRITICAL</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {highRiskVendors.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-amber-400 mb-2">High Risk ({highRiskVendors.length})</p>
+                  <div className="space-y-2">
+                    {highRiskVendors.map((vendor) => (
+                      <div key={vendor.email} className="p-3 rounded-lg bg-amber-900/20 border border-amber-500/30 flex justify-between items-center">
+                        <div>
+                          <p className="text-sm text-amber-300">{vendor.vendorName}</p>
+                          <p className="text-xs text-amber-300/60">Risk Score: {Math.round(vendor.riskScore)}</p>
+                        </div>
+                        <Badge className="bg-amber-600 text-white">HIGH</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Vendor Submissions Table */}
         <Card className="border-border bg-card">
           <CardHeader>
             <CardTitle className="text-foreground">Vendor Risk Assessments</CardTitle>
@@ -234,7 +457,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Recent Submissions Feed */}
+        {/* Recent Activity Feed */}
         {vendorSubmissions.length > 0 && (
           <Card className="border-border bg-card">
             <CardHeader>
@@ -300,6 +523,32 @@ function StatCard({ title, value, color, textColor, borderColor }: StatCardProps
       <CardContent>
         <div className="text-2xl font-bold text-foreground">{value}</div>
       </CardContent>
+    </Card>
+  )
+}
+
+interface MetricCardProps {
+  title: string
+  value: number
+  subtitle: string
+  icon: React.ElementType
+  color: string
+  bgColor: string
+}
+
+function MetricCard({ title, value, subtitle, icon: Icon, color, bgColor }: MetricCardProps) {
+  return (
+    <Card className={`border-border ${bgColor}`}>
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+            <div className="text-2xl font-bold text-foreground mt-2">{value}</div>
+            <CardDescription className="text-xs mt-1">{subtitle}</CardDescription>
+          </div>
+          <Icon className={`h-5 w-5 ${color}`} />
+        </div>
+      </CardHeader>
     </Card>
   )
 }
