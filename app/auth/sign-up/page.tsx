@@ -43,15 +43,27 @@ export default function SignUpPage() {
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      // Sign up the user without email confirmation requirement (development mode)
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/login`,
+          emailRedirectTo: `${window.location.origin}/dashboard`,
         },
       })
-      if (error) throw error
-      router.push('/auth/sign-up-success')
+
+      if (signUpError) throw signUpError
+
+      // For development: Auto-sign in the user immediately after signup
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInError) throw signInError
+
+      // Redirect directly to dashboard
+      router.push('/dashboard')
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
@@ -90,7 +102,7 @@ export default function SignUpPage() {
           <CardHeader>
             <CardTitle className="text-white">Create Account</CardTitle>
             <CardDescription className="text-slate-400">
-              Set up your account to get started
+              Sign up to access VendorLens immediately
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -151,7 +163,7 @@ export default function SignUpPage() {
                 disabled={isLoading}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2"
               >
-                {isLoading ? 'Creating account...' : 'Create Account'}
+                {isLoading ? 'Creating account...' : 'Create Account & Sign In'}
               </Button>
             </form>
 
