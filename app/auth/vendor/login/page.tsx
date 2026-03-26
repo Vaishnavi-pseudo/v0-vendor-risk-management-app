@@ -44,8 +44,6 @@ export default function VendorLoginPage() {
   }
 
   const handleDemoLogin = () => {
-    setEmail('acme-tech@acme.com')
-    setPassword('demo123')
     setIsLoading(true)
     setError(null)
 

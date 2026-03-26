@@ -28,7 +28,6 @@ export default function AdminLoginPage() {
       return
     }
 
-    // For demo: Accept any email/password combination for admin login
     setTimeout(() => {
       localStorage.setItem('adminSession', JSON.stringify({
         email,
@@ -43,8 +42,6 @@ export default function AdminLoginPage() {
   }
 
   const handleDemoLogin = () => {
-    setEmail('compliance@company.com')
-    setPassword('demo123')
     setIsLoading(true)
     setError(null)
 
@@ -64,7 +61,6 @@ export default function AdminLoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
-        {/* Back Button */}
         <Link href="/auth">
           <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
             <ChevronLeft className="h-4 w-4" />
@@ -72,7 +68,6 @@ export default function AdminLoginPage() {
           </Button>
         </Link>
 
-        {/* Card */}
         <Card className="border-border bg-card">
           <CardHeader>
             <div className="flex items-center justify-center gap-2 mb-4">
@@ -87,7 +82,6 @@ export default function AdminLoginPage() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Error Alert */}
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
@@ -95,7 +89,6 @@ export default function AdminLoginPage() {
               </Alert>
             )}
 
-            {/* Login Form */}
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-foreground">
@@ -136,7 +129,6 @@ export default function AdminLoginPage() {
               </Button>
             </form>
 
-            {/* Divider */}
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-border" />
@@ -146,7 +138,6 @@ export default function AdminLoginPage() {
               </div>
             </div>
 
-            {/* Demo Login */}
             <Button
               type="button"
               onClick={handleDemoLogin}
@@ -157,7 +148,6 @@ export default function AdminLoginPage() {
               {isLoading ? 'Loading...' : 'Try Demo (Sarah Chen)'}
             </Button>
 
-            {/* Info Box */}
             <div className="p-4 rounded-lg bg-muted/30 border border-border">
               <p className="text-xs text-muted-foreground">
                 <span className="font-semibold text-foreground">Demo credentials:</span><br />
