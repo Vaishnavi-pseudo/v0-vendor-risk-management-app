@@ -13,6 +13,9 @@ export interface DocumentAnalysis {
   }>
   complianceKeywords: string[]
   certifications: string[]
+  expirationDate?: Date
+  expirationStatus?: 'Valid' | 'Expiring' | 'Expired'
+  riskScoreImpact: number
 }
 
 // Mock vendor documents and their analysis
@@ -257,20 +260,110 @@ export async function parseDocument(fileName: string, _fileContent: ArrayBuffer)
   // For demo, return mock analysis based on file name
   const documentKey = Object.keys(MOCK_DOCUMENTS).find((key) => key.toLowerCase() === fileName.toLowerCase())
 
+  let analysis: DocumentAnalysis
+  
   if (documentKey) {
-    return MOCK_DOCUMENTS[documentKey]
+    analysis = MOCK_DOCUMENTS[documentKey]
+  } else {
+    // Return generic analysis for unknown documents
+    analysis = {
+      documentType: 'Unknown Document',
+      fileName,
+      extractedText: 'Document content extraction failed or unsupported format',
+      keyFindings: [],
+      suggestedQuestions: [],
+      complianceKeywords: [],
+      certifications: [],
+      riskScoreImpact: 0,
+    }
   }
 
-  // Return generic analysis for unknown documents
-  return {
-    documentType: 'Unknown Document',
-    fileName,
-    extractedText: 'Document content extraction failed or unsupported format',
-    keyFindings: [],
-    suggestedQuestions: [],
-    complianceKeywords: [],
-    certifications: [],
+  // Extract expiration date and calculate status
+  const expirationData = extractExpirationDate(analysis)
+  analysis.expirationDate = expirationData.expirationDate
+  analysis.expirationStatus = expirationData.status
+
+  // Set risk score impact based on document type
+  analysis.riskScoreImpact = getDocumentRiskImpact(analysis.documentType)
+
+  return analysis
+}
+
+// Helper function to extract expiration dates from documents
+function extractExpirationDate(analysis: DocumentAnalysis): { expirationDate?: Date; status?: 'Valid' | 'Expiring' | 'Expired' } {
+  const text = analysis.extractedText.toLowerCase()
+  const now = new Date()
+  
+  // Common date patterns
+  const datePatterns = [
+    /expir(?:es?|ation)?\s*[:\-]?\s*([A-Za-z]+\s*\d{1,2},?\s*\d{4})/gi,
+    /valid\s+(?:until|through)\s*[:\-]?\s*([A-Za-z]+\s*\d{1,2},?\s*\d{4})/gi,
+    /renewal\s+date\s*[:\-]?\s*([A-Za-z]+\s*\d{1,2},?\s*\d{4})/gi,
+    /cert[^n]*expires?\s*[:\-]?\s*([A-Za-z]+\s*\d{1,2},?\s*\d{4})/gi,
+    /([A-Za-z]+\s*\d{1,2},?\s*202[4-9])/gi, // Generic future dates
+  ]
+
+  let foundDate: Date | undefined
+
+  for (const pattern of datePatterns) {
+    const matches = text.matchAll(pattern)
+    for (const match of matches) {
+      if (match[1]) {
+        const parsedDate = new Date(match[1])
+        if (!isNaN(parsedDate.getTime())) {
+          foundDate = parsedDate
+          break
+        }
+      }
+    }
+    if (foundDate) break
   }
+
+  // If no expiration date found, assume 1 year validity
+  if (!foundDate) {
+    foundDate = new Date(now)
+    foundDate.setFullYear(foundDate.getFullYear() + 1)
+  }
+
+  // Determine status
+  const daysUntilExpiry = Math.floor((foundDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  let status: 'Valid' | 'Expiring' | 'Expired'
+
+  if (daysUntilExpiry < 0) {
+    status = 'Expired'
+  } else if (daysUntilExpiry < 30) {
+    status = 'Expiring'
+  } else {
+    status = 'Valid'
+  }
+
+  return { expirationDate: foundDate, status }
+}
+
+// Get risk impact based on document type
+function getDocumentRiskImpact(documentType: string): number {
+  const typeToWeight: Record<string, number> = {
+    'SOC 2': -20,
+    'ITDR': -20,
+    'BCP': -18,
+    'Business Continuity': -18,
+    'Crisis Management': -15,
+    'SOC Monitoring': -15,
+    'Cyber Insurance': -12,
+    'Insurance': -12,
+    'SLA': -10,
+    'NDA': -8,
+    'GDPR': -8,
+    'ISO 27001': -18,
+  }
+
+  for (const [key, weight] of Object.entries(typeToWeight)) {
+    if (documentType.includes(key)) {
+      return weight
+    }
+  }
+
+  return -5 // Default small risk reduction for any document
 }
 
 export function getDocumentTypeIcon(docType: string): string {

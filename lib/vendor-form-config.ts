@@ -352,9 +352,14 @@ export const VENDOR_FORM_TEMPLATES: Record<VendorType, VendorFormTemplate> = {
 }
 
 // Function to calculate risk score from form responses
+// Updated import statement at top of file - add this to imports
+import { documentRepository } from './vendor-document-repository'
+import { DOCUMENT_WEIGHT_PERCENTAGES, calculateDocumentRiskReduction } from './document-risk-weights'
+
 export function calculateRiskScore(
   vendorType: VendorType,
-  responses: Record<string, string | string[]>
+  responses: Record<string, string | string[]>,
+  vendorEmail?: string
 ): number {
   const template = VENDOR_FORM_TEMPLATES[vendorType]
   let totalScore = 0
@@ -386,9 +391,23 @@ export function calculateRiskScore(
     totalWeight += question.riskWeight
   })
 
-  // Normalize to 0-100 scale
-  const normalizedScore = totalWeight > 0 ? totalScore / totalWeight + 50 : 50
-  return Math.max(0, Math.min(100, normalizedScore))
+  // Normalize form questions to 0-100 scale
+  let formScore = totalWeight > 0 ? totalScore / totalWeight + 50 : 50
+  formScore = Math.max(0, Math.min(100, formScore))
+
+  // Calculate document-based risk reduction
+  let documentScore = 0
+  if (vendorEmail) {
+    const documents = documentRepository.getVendorDocuments(vendorEmail)
+    const validDocs = documents.filter((d) => d.status === 'Valid' || d.status === 'Validated')
+    documentScore = validDocs.reduce((total, doc) => total + doc.analysis.riskScoreImpact, 0)
+  }
+
+  // Blend scores: 80% form-based, 20% document-based
+  const finalScore = formScore * DOCUMENT_WEIGHT_PERCENTAGES.questionWeight + 
+                     Math.max(0, documentScore) * DOCUMENT_WEIGHT_PERCENTAGES.documentWeight
+
+  return Math.max(0, Math.min(100, finalScore))
 }
 
 // Function to get risk level based on score

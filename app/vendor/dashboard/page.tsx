@@ -13,8 +13,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
 import { Building2, LogOut, CheckCircle2, FileText, Upload } from 'lucide-react'
 import { DocumentUpload } from '@/components/document-upload'
+import { DocumentUploadQuestion } from '@/components/document-upload-question'
 import { VENDOR_FORM_TEMPLATES, VendorType, calculateRiskScore, getRiskLevel } from '@/lib/vendor-form-config'
 import { DocumentAnalysis } from '@/lib/document-parser'
+import { documentRepository, VendorDocument } from '@/lib/vendor-document-repository'
 
 interface VendorSession {
   email: string
@@ -114,15 +116,10 @@ export default function VendorDashboard() {
   }
 
   const handleSubmit = () => {
-    if (!vendorType) return
+    if (!vendorType || !vendorData) return
 
-    let totalRiskScore = calculateRiskScore(vendorType, responses)
-
-    if (documentQuestions.length > 0) {
-      const docResponseCount = Object.keys(responses).filter((k) => k.startsWith('doc_q_')).length
-      const docScore = (docResponseCount / documentQuestions.length) * 20
-      totalRiskScore = Math.max(0, totalRiskScore - docScore)
-    }
+    // Calculate risk score including document impact
+    let totalRiskScore = calculateRiskScore(vendorType, responses, vendorData.email)
 
     const submission: Submission = {
       id: `sub_${Date.now()}`,
@@ -133,24 +130,24 @@ export default function VendorDashboard() {
 
     const updated = [...submissions, submission]
     setSubmissions(updated)
-    if (vendorData) {
-      localStorage.setItem(`vendor_submissions_${vendorData.email}`, JSON.stringify(updated))
+    
+    localStorage.setItem(`vendor_submissions_${vendorData.email}`, JSON.stringify(updated))
 
-      const allVendorSubmissions = JSON.parse(localStorage.getItem('all_vendor_submissions') || '{}')
-      allVendorSubmissions[vendorData.email] = {
-        ...submission,
-        vendorName: vendorData.vendorName,
-        email: vendorData.email,
-      }
-      localStorage.setItem('all_vendor_submissions', JSON.stringify(allVendorSubmissions))
+    // Update all vendor submissions for admin dashboard
+    const allVendorSubmissions = JSON.parse(localStorage.getItem('all_vendor_submissions') || '{}')
+    allVendorSubmissions[vendorData.email] = {
+      ...submission,
+      vendorName: vendorData.vendorName,
+      email: vendorData.email,
     }
+    localStorage.setItem('all_vendor_submissions', JSON.stringify(allVendorSubmissions))
 
     setShowSuccess(true)
     setResponses({})
     setTimeout(() => setShowSuccess(false), 5000)
   }
 
-  const riskScore = vendorType ? calculateRiskScore(vendorType, responses) : 0
+  const riskScore = vendorType && vendorData ? calculateRiskScore(vendorType, responses, vendorData.email) : 0
   const riskLevel = getRiskLevel(riskScore)
   const template = vendorType ? VENDOR_FORM_TEMPLATES[vendorType] : null
   const allQuestions = template ? [...template.questions] : []
