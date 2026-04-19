@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { AppLayout } from "@/components/app-layout";
 import { RiskBadge, StatusBadge } from "@/components/risk-badge";
 import { TableSkeleton } from "@/components/skeletons";
@@ -166,14 +167,16 @@ export default function VendorsPage() {
                         className="hover:bg-muted/30 transition-colors"
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <span className="text-sm font-medium text-foreground">
-                              {vendor.name}
-                            </span>
-                            <p className="text-xs text-muted-foreground">
-                              {vendor.country}
-                            </p>
-                          </div>
+                          <Link href={`/vendors/${vendor.id}`}>
+                            <div className="cursor-pointer hover:opacity-80 transition-opacity">
+                              <span className="text-sm font-medium text-blue-400 hover:text-blue-300">
+                                {vendor.name}
+                              </span>
+                              <p className="text-xs text-muted-foreground">
+                                {vendor.country}
+                              </p>
+                            </div>
+                          </Link>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm text-muted-foreground">

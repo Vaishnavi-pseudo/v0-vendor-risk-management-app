@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   Building2,
+  Clipboard,
   Grid3X3,
   FileText,
   Bell,
@@ -16,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/vendors", label: "Vendors", icon: Building2 },
+  { href: "/vendor-assessment", label: "Vendor Assessment", icon: Clipboard },
   { href: "/risk-heatmap", label: "Risk Heatmap", icon: Grid3X3 },
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/alerts", label: "Alerts", icon: Bell },
