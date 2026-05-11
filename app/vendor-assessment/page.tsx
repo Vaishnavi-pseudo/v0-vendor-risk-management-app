@@ -91,7 +91,7 @@ export default function VendorAssessmentPage() {
             ))}
           </div>
           <div className="flex gap-2 md:gap-3 pt-4">
-            <Button variant="outline" onClick={() => setResponses({)} className="text-xs md:text-sm">Clear</Button>
+            <Button variant="outline" onClick={() => setResponses({})} className="text-xs md:text-sm">Clear</Button>
             <Button onClick={() => handleSubmit(type)} className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs md:text-sm">Submit</Button>
           </div>
         </CardContent>
