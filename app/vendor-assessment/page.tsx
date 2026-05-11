@@ -55,12 +55,12 @@ export default function VendorAssessmentPage() {
     if (isSubmitted) {
       return (
         <Card className="border-border bg-card">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <CheckCircle2 className="h-16 w-16 text-green-400 mb-4" />
-            <h3 className="text-xl font-semibold text-foreground mb-2">{title} Complete</h3>
-            <div className="text-4xl font-bold text-blue-400 mb-2">{score}</div>
-            <p className="text-sm text-muted-foreground">Assessment Score</p>
-          </CardContent>
+        <CardContent className="flex flex-col items-center justify-center py-8 md:py-12">
+          <CheckCircle2 className="h-12 md:h-16 w-12 md:w-16 text-green-400 mb-4" />
+          <h3 className="text-lg md:text-xl font-semibold text-foreground mb-2">{title} Complete</h3>
+          <div className="text-3xl md:text-4xl font-bold text-blue-400 mb-2">{score}</div>
+          <p className="text-xs md:text-sm text-muted-foreground">Assessment Score</p>
+        </CardContent>
         </Card>
       )
     }
@@ -68,21 +68,21 @@ export default function VendorAssessmentPage() {
     return (
       <Card className="border-border bg-card">
         <CardHeader>
-          <CardTitle className="text-foreground">{title}</CardTitle>
-          <CardDescription className="text-muted-foreground">{VENDOR_SAMPLE.name}</CardDescription>
+          <CardTitle className="text-lg md:text-xl text-foreground">{title}</CardTitle>
+          <CardDescription className="text-xs md:text-sm text-muted-foreground">{VENDOR_SAMPLE.name}</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 md:space-y-6">
           <Progress value={score} className="h-2" />
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {questions.map(q => (
-              <div key={q.id} className="space-y-3 pb-4 border-b border-border last:border-0">
-                <Label className="text-foreground font-medium">{q.q}</Label>
+              <div key={q.id} className="space-y-2 md:space-y-3 pb-4 border-b border-border last:border-0">
+                <Label className="text-sm md:text-base text-foreground font-medium">{q.q}</Label>
                 <RadioGroup value={responses[q.id] || ''} onValueChange={val => setResponses(prev => ({ ...prev, [q.id]: val }))}>
                   <div className="space-y-2">
                     {q.opts.map(opt => (
                       <div key={opt} className="flex items-center space-x-2">
                         <RadioGroupItem value={opt} id={`${q.id}_${opt}`} />
-                        <Label htmlFor={`${q.id}_${opt}`} className="text-sm text-muted-foreground cursor-pointer">{opt}</Label>
+                        <Label htmlFor={`${q.id}_${opt}`} className="text-xs md:text-sm text-muted-foreground cursor-pointer">{opt}</Label>
                       </div>
                     ))}
                   </div>
@@ -90,9 +90,9 @@ export default function VendorAssessmentPage() {
               </div>
             ))}
           </div>
-          <div className="flex gap-3 pt-4">
-            <Button variant="outline" onClick={() => setResponses({})}>Clear</Button>
-            <Button onClick={() => handleSubmit(type)} className="flex-1 bg-blue-600 hover:bg-blue-700">Submit</Button>
+          <div className="flex gap-2 md:gap-3 pt-4">
+            <Button variant="outline" onClick={() => setResponses({)} className="text-xs md:text-sm">Clear</Button>
+            <Button onClick={() => handleSubmit(type)} className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs md:text-sm">Submit</Button>
           </div>
         </CardContent>
       </Card>
@@ -101,18 +101,18 @@ export default function VendorAssessmentPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Vendor Assessment</h1>
-          <p className="text-sm text-muted-foreground mt-1">Sample Assessment for {VENDOR_SAMPLE.name}</p>
+          <h1 className="text-xl md:text-2xl font-semibold text-foreground">Vendor Assessment</h1>
+          <p className="text-xs md:text-sm text-muted-foreground mt-1">Sample Assessment for {VENDOR_SAMPLE.name}</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-muted">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
-            <TabsTrigger value="performance">Performance</TabsTrigger>
-            <TabsTrigger value="risk">Risk</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-muted">
+            <TabsTrigger value="overview" className="text-xs md:text-sm">Overview</TabsTrigger>
+            <TabsTrigger value="onboarding" className="text-xs md:text-sm">Onboarding</TabsTrigger>
+            <TabsTrigger value="performance" className="text-xs md:text-sm hidden md:inline-flex">Performance</TabsTrigger>
+            <TabsTrigger value="risk" className="text-xs md:text-sm hidden md:inline-flex">Risk</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -122,14 +122,14 @@ export default function VendorAssessmentPage() {
                 <CardDescription className="text-muted-foreground">{VENDOR_SAMPLE.category}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {['onboarding', 'performance', 'risk'].map(type => {
                     const score = calculateScore(type)
                     return (
                       <Card key={type} className="border-border bg-muted/30">
                         <CardContent className="pt-6">
-                          <p className="text-sm text-muted-foreground mb-2 capitalize">{type}</p>
-                          <div className="text-3xl font-bold text-blue-400">{score}%</div>
+                          <p className="text-xs md:text-sm text-muted-foreground mb-2 capitalize">{type}</p>
+                          <div className="text-2xl md:text-3xl font-bold text-blue-400">{score}%</div>
                           <Badge variant="outline" className="mt-3 text-xs">
                             {submitted[type] ? 'Completed' : 'Pending'}
                           </Badge>
@@ -139,8 +139,8 @@ export default function VendorAssessmentPage() {
                   })}
                 </div>
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-foreground">Weight Distribution</h3>
-                  <div className="text-sm text-muted-foreground space-y-1">
+                  <h3 className="font-semibold text-foreground text-sm md:text-base">Weight Distribution</h3>
+                  <div className="text-xs md:text-sm text-muted-foreground space-y-1">
                     <p>Onboarding: {Math.round(ASSESSMENT_WEIGHTS.onboarding * 100)}%</p>
                     <p>Performance: {Math.round(ASSESSMENT_WEIGHTS.performance * 100)}%</p>
                     <p>Risk: {Math.round(ASSESSMENT_WEIGHTS.risk * 100)}%</p>
